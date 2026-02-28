@@ -22,10 +22,6 @@ COPY src src
 # Compilar sin tests
 RUN ./mvnw package -DskipTests -B --no-transfer-progress
 
-# Extraer JAR en capas: separa dependencias (cambian poco) del código (cambia seguido)
-# Resultado: rebuilds más rápidos porque Docker cachea las capas de dependencias
-RUN java -Djarmode=tools -jar target/*.jar extract --layers --destination extracted
-
 # ============================================================
 # Stage 2: Runtime
 # ============================================================
@@ -36,12 +32,8 @@ WORKDIR /app
 # Crear usuario no-root por seguridad
 RUN groupadd --system appgroup && useradd --system --gid appgroup appuser
 
-# Copiar capas en orden de frecuencia de cambio (menor → mayor)
-# Si solo cambia el código, Docker reutiliza las capas de dependencias del cache
-COPY --from=build /app/extracted/dependencies/ ./
-COPY --from=build /app/extracted/spring-boot-loader/ ./
-COPY --from=build /app/extracted/snapshot-dependencies/ ./
-COPY --from=build /app/extracted/application/ ./
+# Copiar el JAR generado
+COPY --from=build /app/target/*.jar app.jar
 
 # Crear directorio de logs
 RUN mkdir -p /app/logs && chown -R appuser:appgroup /app
@@ -60,4 +52,4 @@ ENTRYPOINT ["java", \
   "-XX:MaxRAMPercentage=65.0", \
   "-XX:MaxMetaspaceSize=120m", \
   "-Xss512k", \
-  "org.springframework.boot.loader.launch.JarLauncher"]
+  "-jar", "app.jar"]
