@@ -1,0 +1,44 @@
+services:
+  - type: web
+    name: backend-ecommerce
+    runtime: docker
+    repo: https://github.com/JohnMata0427/backend-ecommerce-template
+    plan: free
+    branch: main
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /actuator/health/liveness
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: ecommerce-db
+          property: connectionURI
+      - key: REDIS_URL
+        fromService:
+          name: ecommerce-redis
+          type: redis
+          property: connectionURI
+      - key: DB_USERNAME
+        fromDatabase:
+          name: ecommerce-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: ecommerce-db
+          property: password
+      - key: SECURITY_USER
+        sync: false
+      - key: SECURITY_PASSWORD
+        sync: false
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+
+databases:
+  - name: ecommerce-db
+    plan: free
+    databaseName: ecommerce
+    user: ecommerce_user
+    postgresMajorVersion: "17"
