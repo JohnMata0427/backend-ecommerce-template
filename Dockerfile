@@ -23,8 +23,10 @@ FROM eclipse-temurin:25-jre
 
 WORKDIR /app
 
-# Crear usuario no-root por seguridad
-RUN groupadd --system appgroup && useradd --system --gid appgroup appuser
+# Instalar curl para health checks y crear usuario no-root por seguridad
+RUN apt-get update && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/* \
+    && groupadd --system appgroup && useradd --system --gid appgroup appuser
 
 # Copiar el JAR generado desde la etapa de build
 COPY --from=build /app/target/*.jar app.jar

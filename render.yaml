@@ -35,6 +35,11 @@ services:
         sync: false
       - key: CLOUDINARY_API_SECRET
         sync: false
+  - type: redis
+    name: ecommerce-redis
+    plan: free
+    ipAllowList: []
+    maxmemoryPolicy: allkeys-lru
 
 databases:
   - name: ecommerce-db
