@@ -9,9 +9,9 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>org.e-commerce</groupId>
-	<artifactId>backend-template</artifactId>
+	<artifactId>backend-ecommerce-template</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>backend-template</name>
+	<name>backend-ecommerce-template</name>
 	<description>Plantilla Backend para un E-commerce</description>
 	<url/>
 	<licenses>
