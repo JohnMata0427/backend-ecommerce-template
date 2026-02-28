@@ -8,42 +8,27 @@ services:
     dockerfilePath: ./Dockerfile
     healthCheckPath: /actuator/health/liveness
     envVars:
+      # NeonDB (PostgreSQL) — configurar manualmente en el dashboard de Render
+      # Formato DATABASE_URL: jdbc:postgresql://<host>/<database>?sslmode=require
       - key: DATABASE_URL
-        fromDatabase:
-          name: ecommerce-db
-          property: connectionURI
-      - key: REDIS_URL
-        fromService:
-          name: ecommerce-redis
-          type: redis
-          property: connectionURI
+        sync: false
       - key: DB_USERNAME
-        fromDatabase:
-          name: ecommerce-db
-          property: user
+        sync: false
       - key: DB_PASSWORD
-        fromDatabase:
-          name: ecommerce-db
-          property: password
+        sync: false
+      # Redis (Render) — configurar manualmente con la URL de tu instancia existente
+      # Formato: redis://:password@host:port o rediss://:password@host:port (TLS)
+      - key: REDIS_URL
+        sync: false
+      # Spring Security
       - key: SECURITY_USER
         sync: false
       - key: SECURITY_PASSWORD
         sync: false
+      # Cloudinary
       - key: CLOUDINARY_CLOUD_NAME
         sync: false
       - key: CLOUDINARY_API_KEY
         sync: false
       - key: CLOUDINARY_API_SECRET
         sync: false
-  - type: redis
-    name: ecommerce-redis
-    plan: free
-    ipAllowList: []
-    maxmemoryPolicy: allkeys-lru
-
-databases:
-  - name: ecommerce-db
-    plan: free
-    databaseName: ecommerce
-    user: ecommerce_user
-    postgresMajorVersion: "17"
