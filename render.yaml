@@ -1,15 +1,8 @@
 # Render Blueprint — Infraestructura como Código
 # Docs: https://docs.render.com/blueprint-spec
-
-databases:
-  # PostgreSQL gestionado por Render
-  - name: ecommerce-db
-    plan: free
-    databaseName: ecommerce
-    user: ecommerce_user
-    region: oregon
-    postgresMajorVersion: "17"
-    ipAllowList: [] # Solo conexiones internas de Render
+#
+# Base de datos: PostgreSQL en Neon (externo) — no expira, autoscale, pooling integrado
+# Redis + API: gestionados por Render
 
 services:
   # Redis gestionado por Render
@@ -28,33 +21,17 @@ services:
     plan: free
     dockerfilePath: ./Dockerfile
     envVars:
-      # --- Base de datos ---
-      - key: DATABASE_URL
-        fromDatabase:
-          name: ecommerce-db
-          property: connectionString
-        # Render provee la URL en formato postgres://, necesitamos jdbc:postgresql://
-        # Se transforma vía preDeployCommand o en application.properties
-      - key: DB_USERNAME
-        fromDatabase:
-          name: ecommerce-db
-          property: user
-      - key: DB_PASSWORD
-        fromDatabase:
-          name: ecommerce-db
-          property: password
+      # --- Base de datos (Neon — configurar manualmente en dashboard) ---
       - key: DB_HOST
-        fromDatabase:
-          name: ecommerce-db
-          property: host
+        sync: false
       - key: DB_PORT
-        fromDatabase:
-          name: ecommerce-db
-          property: port
+        value: "5432"
       - key: DB_NAME
-        fromDatabase:
-          name: ecommerce-db
-          property: database
+        sync: false
+      - key: DB_USERNAME
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
 
       # --- Redis ---
       - key: REDIS_URL
