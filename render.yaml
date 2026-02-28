@@ -1,0 +1,84 @@
+# Render Blueprint — Infraestructura como Código
+# Docs: https://docs.render.com/blueprint-spec
+
+databases:
+  # PostgreSQL gestionado por Render
+  - name: ecommerce-db
+    plan: free
+    databaseName: ecommerce
+    user: ecommerce_user
+    region: oregon
+    postgresMajorVersion: "17"
+    ipAllowList: [] # Solo conexiones internas de Render
+
+services:
+  # Redis gestionado por Render
+  - type: redis
+    name: ecommerce-redis
+    plan: free
+    region: oregon
+    maxmemoryPolicy: allkeys-lru
+    ipAllowList: [] # Solo conexiones internas de Render
+
+  # API de Java (Web Service)
+  - type: web
+    name: ecommerce-api
+    runtime: docker
+    region: oregon
+    plan: free
+    dockerfilePath: ./Dockerfile
+    envVars:
+      # --- Base de datos ---
+      - key: DATABASE_URL
+        fromDatabase:
+          name: ecommerce-db
+          property: connectionString
+        # Render provee la URL en formato postgres://, necesitamos jdbc:postgresql://
+        # Se transforma vía preDeployCommand o en application.properties
+      - key: DB_USERNAME
+        fromDatabase:
+          name: ecommerce-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: ecommerce-db
+          property: password
+      - key: DB_HOST
+        fromDatabase:
+          name: ecommerce-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: ecommerce-db
+          property: port
+      - key: DB_NAME
+        fromDatabase:
+          name: ecommerce-db
+          property: database
+
+      # --- Redis ---
+      - key: REDIS_URL
+        fromService:
+          name: ecommerce-redis
+          type: redis
+          property: connectionString
+
+      # --- Security ---
+      - key: SECURITY_USER
+        generateValue: true
+      - key: SECURITY_PASSWORD
+        generateValue: true
+
+      # --- Cloudinary (definir manualmente en el dashboard) ---
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+
+      # --- Spring Profile ---
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+    healthCheckPath: /actuator/health/liveness
+    numInstances: 1

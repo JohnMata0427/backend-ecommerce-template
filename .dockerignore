@@ -1,0 +1,11 @@
+target/
+logs/
+*.log
+.git/
+.gitignore
+.idea/
+*.iml
+.vscode/
+*.md
+requests/
+render.yaml

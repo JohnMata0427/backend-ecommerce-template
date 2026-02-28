@@ -1,0 +1,46 @@
+# Dependabot: mantiene dependencias actualizadas con parches de seguridad
+# Crítico para producción — vulnerabilidades en libs se parchean automáticamente
+version: 2
+
+updates:
+  # Dependencias Maven (Spring Boot, MapStruct, Cloudinary, etc.)
+  - package-ecosystem: "maven"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "maven"
+    # Agrupar actualizaciones menores/patch en un solo PR
+    groups:
+      spring-boot:
+        patterns:
+          - "org.springframework.boot*"
+          - "org.springframework.cloud*"
+      testing:
+        patterns:
+          - "org.springframework.boot:*-test*"
+
+  # GitHub Actions: mantener las actions actualizadas
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "github-actions"
+
+  # Dockerfile: base images actualizadas
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 3
+    labels:
+      - "dependencies"
+      - "docker"

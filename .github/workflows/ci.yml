@@ -1,0 +1,125 @@
+# ============================================================
+# CI Pipeline — Validación continua antes del deploy en Render
+# ============================================================
+# Se ejecuta en cada push/PR a main y develop.
+# Render se encarga del deploy; este workflow garantiza que
+# el código que llega a main ya fue compilado, testeado y validado.
+
+name: CI Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+# Cancela ejecuciones previas del mismo PR/branch para ahorrar minutos
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  # ──────────────────────────────────────────────────────────
+  # Job 1: Compilar + Tests
+  # ──────────────────────────────────────────────────────────
+  build-and-test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    services:
+      # PostgreSQL para tests de integración
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: ecommerce_test
+          POSTGRES_USER: testuser
+          POSTGRES_PASSWORD: testpass
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U testuser -d ecommerce_test"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+          --health-start-period=10s
+
+      # Redis para tests de caché
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Configurar JDK 25
+        uses: actions/setup-java@v4
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Compilar y ejecutar tests
+        run: ./mvnw verify -B -Dspring.profiles.active=test
+        env:
+          # Base de datos (apunta al servicio PostgreSQL del runner)
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: ecommerce_test
+          DB_USERNAME: testuser
+          DB_PASSWORD: testpass
+          # Redis (apunta al servicio Redis del runner)
+          REDIS_URL: redis://localhost:6379
+          # Security (valores dummy para tests)
+          SECURITY_USER: ci_admin
+          SECURITY_PASSWORD: ci_admin_pass
+          # Cloudinary (valores dummy — no se sube nada real en tests)
+          CLOUDINARY_CLOUD_NAME: test_cloud
+          CLOUDINARY_API_KEY: 000000000000000
+          CLOUDINARY_API_SECRET: test_secret
+
+      - name: Subir reportes de tests
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: |
+            target/surefire-reports/
+            target/failsafe-reports/
+          retention-days: 7
+
+  # ──────────────────────────────────────────────────────────
+  # Job 2: Validar que el Dockerfile construye correctamente
+  # ──────────────────────────────────────────────────────────
+  docker-build:
+    name: Docker Build Validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: build-and-test
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Configurar Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build imagen Docker (sin push)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          tags: ecommerce-api:ci-${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
