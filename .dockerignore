@@ -1,0 +1,34 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# IDE
+.idea
+.vscode
+*.iml
+*.ipr
+*.iws
+
+# Build artifacts
+target/
+build/
+dist/
+
+# Logs
+logs/
+
+# CI/CD
+.github/
+
+# Docker
+Dockerfile
+.dockerignore
+compose.yaml
+
+# Docs
+*.md
+LICENSE
+
+# Requests (HTTP client files)
+requests/

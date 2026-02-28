@@ -1,0 +1,34 @@
+services:
+  - type: web
+    name: backend-ecommerce
+    runtime: docker
+    repo: https://github.com/JohnMata0427/backend-ecommerce-template
+    plan: free
+    branch: main
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /actuator/health/liveness
+    envVars:
+      # NeonDB (PostgreSQL) — configurar manualmente en el dashboard de Render
+      # Formato DATABASE_URL: jdbc:postgresql://<host>/<database>?sslmode=require
+      - key: DATABASE_URL
+        sync: false
+      - key: DB_USERNAME
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      # Redis (Render) — configurar manualmente con la URL de tu instancia existente
+      # Formato: redis://:password@host:port o rediss://:password@host:port (TLS)
+      - key: REDIS_URL
+        sync: false
+      # Spring Security
+      - key: SECURITY_USER
+        sync: false
+      - key: SECURITY_PASSWORD
+        sync: false
+      # Cloudinary
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
