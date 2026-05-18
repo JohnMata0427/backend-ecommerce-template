@@ -369,6 +369,23 @@ const response = await fetch("http://localhost:8080/api/v1/products", {
 
 ---
 
+### 5.6 Endpoints prioritarios recomendados para implementar
+
+Además del catálogo actual, estos endpoints suelen ser los más importantes para completar un e-commerce funcional:
+
+| Prioridad | Recurso | Endpoints sugeridos | Objetivo |
+|---|---|---|---|
+| Alta | Auth | `POST /api/v1/auth/login`, `POST /api/v1/auth/refresh`, `POST /api/v1/auth/logout` | Gestión de sesión y seguridad para frontend/admin |
+| Alta | Users | `POST /api/v1/users/register`, `GET /api/v1/users/me`, `PUT /api/v1/users/me` | Registro y perfil del cliente |
+| Alta | Cart | `GET /api/v1/cart`, `POST /api/v1/cart/items`, `PUT /api/v1/cart/items/{itemId}`, `DELETE /api/v1/cart/items/{itemId}` | Flujo de compra básico |
+| Alta | Orders | `POST /api/v1/orders`, `GET /api/v1/orders`, `GET /api/v1/orders/{id}` | Confirmación y trazabilidad de compras |
+| Media | Payments | `POST /api/v1/payments/intent`, `POST /api/v1/payments/webhook` | Integración con pasarelas de pago |
+| Media | Addresses | `GET /api/v1/addresses`, `POST /api/v1/addresses`, `PUT /api/v1/addresses/{id}` | Envío y facturación |
+
+> Estos endpoints son una guía de priorización funcional y actualmente no forman parte de la API implementada arriba.
+
+---
+
 ## 6. Paginación
 
 Todos los endpoints que retornan listas usan **Spring Data Page**. Tamaño por defecto: **20**, máximo: **100**. La paginación es **1-indexed** (la primera página es `page=1`).
