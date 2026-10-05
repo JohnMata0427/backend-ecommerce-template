@@ -35,8 +35,15 @@ public class ProductController {
 
   private final ProductService productService;
 
+  @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<ProductResponseDto> createProductJson(
+      @RequestBody @Valid final ProductRequestDto requestDto) {
+    final ProductResponseDto created = productService.createProduct(requestDto, null);
+    return ResponseEntity.status(HttpStatus.CREATED).body(created);
+  }
+
   @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-  public ResponseEntity<ProductResponseDto> createProduct(
+  public ResponseEntity<ProductResponseDto> createProductMultipart(
       @RequestPart("product") @Valid final ProductRequestDto requestDto,
       @RequestPart(value = "images", required = false) final List<MultipartFile> images) {
     final ProductResponseDto created = productService.createProduct(requestDto, images);

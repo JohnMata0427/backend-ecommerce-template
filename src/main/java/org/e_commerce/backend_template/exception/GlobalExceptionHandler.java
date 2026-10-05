@@ -45,10 +45,11 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(Exception.class)
   public ResponseEntity<ErrorResponse> handleGenericException(
       final Exception ex, final HttpServletRequest request) {
+    org.slf4j.LoggerFactory.getLogger(GlobalExceptionHandler.class).error("Unhandled exception at " + request.getRequestURI(), ex);
     final ErrorResponse error = new ErrorResponse(
         HttpStatus.INTERNAL_SERVER_ERROR.value(),
         "Internal Server Error",
-        "Ha ocurrido un error interno en el servidor",
+        ex.getMessage() != null ? ex.getMessage() : "Ha ocurrido un error interno en el servidor",
         request.getRequestURI());
     return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
   }
