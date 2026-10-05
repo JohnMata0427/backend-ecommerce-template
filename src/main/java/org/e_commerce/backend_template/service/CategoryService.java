@@ -8,9 +8,6 @@ import org.e_commerce.backend_template.entity.Category;
 import org.e_commerce.backend_template.exception.AppException;
 import org.e_commerce.backend_template.mapper.CategoryMapper;
 import org.e_commerce.backend_template.repository.CategoryRepository;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.CachePut;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -44,7 +41,6 @@ public class CategoryService {
 		return categoryMapper.toResponseDto(savedCategory);
 	}
 
-	@Cacheable(value = "categories", key = "#id")
 	public CategoryResponseDto getCategoryById(final UUID id) {
 		final Category category = categoryRepository.findById(id)
 				.orElseThrow(() -> new AppException(CATEGORY_NOT_FOUND.formatted(id), HttpStatus.NOT_FOUND));
@@ -67,7 +63,6 @@ public class CategoryService {
 	}
 
 	@Transactional
-	@CachePut(value = "categories", key = "#id")
 	public CategoryResponseDto updateCategory(final UUID id, final CategoryRequestDto requestDto) {
 		final Category existingCategory = categoryRepository.findById(id)
 				.orElseThrow(() -> new AppException(CATEGORY_NOT_FOUND.formatted(id), HttpStatus.NOT_FOUND));
@@ -85,7 +80,6 @@ public class CategoryService {
 	}
 
 	@Transactional
-	@CacheEvict(value = "categories", key = "#id")
 	public void deleteCategory(final UUID id) {
 		final Category category = categoryRepository.findById(id)
 				.orElseThrow(() -> new AppException(CATEGORY_NOT_FOUND.formatted(id), HttpStatus.NOT_FOUND));

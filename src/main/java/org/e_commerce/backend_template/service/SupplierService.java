@@ -8,9 +8,6 @@ import org.e_commerce.backend_template.entity.Supplier;
 import org.e_commerce.backend_template.exception.AppException;
 import org.e_commerce.backend_template.mapper.SupplierMapper;
 import org.e_commerce.backend_template.repository.SupplierRepository;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.CachePut;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -44,7 +41,6 @@ public class SupplierService {
 		return supplierMapper.toResponseDto(savedSupplier);
 	}
 
-	@Cacheable(value = "suppliers", key = "#id")
 	public SupplierResponseDto getSupplierById(final UUID id) {
 		final Supplier supplier = supplierRepository.findById(id)
 				.orElseThrow(() -> new AppException(SUPPLIER_NOT_FOUND.formatted(id), HttpStatus.NOT_FOUND));
@@ -67,7 +63,6 @@ public class SupplierService {
 	}
 
 	@Transactional
-	@CachePut(value = "suppliers", key = "#id")
 	public SupplierResponseDto updateSupplier(final UUID id, final SupplierRequestDto requestDto) {
 		final Supplier existingSupplier = supplierRepository.findById(id)
 				.orElseThrow(() -> new AppException(SUPPLIER_NOT_FOUND.formatted(id), HttpStatus.NOT_FOUND));
@@ -85,7 +80,6 @@ public class SupplierService {
 	}
 
 	@Transactional
-	@CacheEvict(value = "suppliers", key = "#id")
 	public void deleteSupplier(final UUID id) {
 		final Supplier supplier = supplierRepository.findById(id)
 				.orElseThrow(() -> new AppException(SUPPLIER_NOT_FOUND.formatted(id), HttpStatus.NOT_FOUND));

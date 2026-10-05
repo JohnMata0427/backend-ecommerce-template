@@ -8,9 +8,6 @@ import org.e_commerce.backend_template.entity.Brand;
 import org.e_commerce.backend_template.exception.AppException;
 import org.e_commerce.backend_template.mapper.BrandMapper;
 import org.e_commerce.backend_template.repository.BrandRepository;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.CachePut;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -44,7 +41,6 @@ public class BrandService {
 		return brandMapper.toResponseDto(savedBrand);
 	}
 
-	@Cacheable(value = "brands", key = "#id")
 	public BrandResponseDto getBrandById(final UUID id) {
 		final Brand brand = brandRepository.findById(id)
 				.orElseThrow(() -> new AppException(BRAND_NOT_FOUND.formatted(id), HttpStatus.NOT_FOUND));
@@ -67,7 +63,6 @@ public class BrandService {
 	}
 
 	@Transactional
-	@CachePut(value = "brands", key = "#id")
 	public BrandResponseDto updateBrand(final UUID id, final BrandRequestDto requestDto) {
 		final Brand existingBrand = brandRepository.findById(id)
 				.orElseThrow(() -> new AppException(BRAND_NOT_FOUND.formatted(id), HttpStatus.NOT_FOUND));
@@ -85,7 +80,6 @@ public class BrandService {
 	}
 
 	@Transactional
-	@CacheEvict(value = "brands", key = "#id")
 	public void deleteBrand(final UUID id) {
 		final Brand brand = brandRepository.findById(id)
 				.orElseThrow(() -> new AppException(BRAND_NOT_FOUND.formatted(id), HttpStatus.NOT_FOUND));

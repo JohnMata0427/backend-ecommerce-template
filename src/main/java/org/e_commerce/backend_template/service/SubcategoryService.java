@@ -10,9 +10,6 @@ import org.e_commerce.backend_template.exception.AppException;
 import org.e_commerce.backend_template.mapper.SubcategoryMapper;
 import org.e_commerce.backend_template.repository.CategoryRepository;
 import org.e_commerce.backend_template.repository.SubcategoryRepository;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.CachePut;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -55,7 +52,6 @@ public class SubcategoryService {
 		return subcategoryMapper.toResponseDto(savedSubcategory);
 	}
 
-	@Cacheable(value = "subcategories", key = "#id")
 	public SubcategoryResponseDto getSubcategoryById(final UUID id) {
 		final Subcategory subcategory = subcategoryRepository.findById(id)
 				.orElseThrow(() -> new AppException(SUBCATEGORY_NOT_FOUND.formatted(id), HttpStatus.NOT_FOUND));
@@ -86,7 +82,6 @@ public class SubcategoryService {
 	}
 
 	@Transactional
-	@CachePut(value = "subcategories", key = "#id")
 	public SubcategoryResponseDto updateSubcategory(final UUID id, final SubcategoryRequestDto requestDto) {
 		final Subcategory existingSubcategory = subcategoryRepository.findById(id)
 				.orElseThrow(() -> new AppException(SUBCATEGORY_NOT_FOUND.formatted(id), HttpStatus.NOT_FOUND));
@@ -113,7 +108,6 @@ public class SubcategoryService {
 	}
 
 	@Transactional
-	@CacheEvict(value = "subcategories", key = "#id")
 	public void deleteSubcategory(final UUID id) {
 		final Subcategory subcategory = subcategoryRepository.findById(id)
 				.orElseThrow(() -> new AppException(SUBCATEGORY_NOT_FOUND.formatted(id), HttpStatus.NOT_FOUND));

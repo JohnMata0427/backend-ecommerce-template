@@ -47,17 +47,6 @@ jobs:
           --health-retries=5
           --health-start-period=10s
 
-      # Redis para tests de caché
-      redis:
-        image: redis:7
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd="redis-cli ping"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
-
     steps:
       - name: Checkout código
         uses: actions/checkout@v4
@@ -81,8 +70,6 @@ jobs:
           DB_NAME: ecommerce_test
           DB_USERNAME: testuser
           DB_PASSWORD: testpass
-          # Redis (apunta al servicio Redis del runner)
-          REDIS_URL: redis://localhost:6379
           # Security (valores dummy para tests)
           SECURITY_USER: ci_admin
           SECURITY_PASSWORD: ci_admin_pass

@@ -3,7 +3,7 @@
 ## 1. Visión General
 
 API REST para e-commerce construida con **Spring Boot 4.0.3** y **Java 25**.  
-Base de datos **PostgreSQL**, caché con **Redis**, imágenes en **Cloudinary**.  
+Base de datos **PostgreSQL**, imágenes en **Cloudinary**.  
 Seguridad con **Spring Security** (HTTP Basic). Hilos virtuales habilitados (Project Loom).
 
 **Base URL:** `http://localhost:8080/api/v1`
@@ -17,33 +17,51 @@ Seguridad con **Spring Security** (HTTP Basic). Hilos virtuales habilitados (Pro
 | Framework | Spring Boot 4.0.3 |
 | Java | 25 (Virtual Threads habilitados) |
 | Base de datos | PostgreSQL |
-| Caché | Redis (TTL: 10 min) |
 | ORM | Hibernate / JPA (ddl-auto: validate) |
 | Mapeo DTO ↔ Entity | MapStruct 1.6.3 |
 | Imágenes | Cloudinary |
-| Resiliencia | Resilience4j (Circuit Breaker, Retry, TimeLimiter) |
 | Métricas | Actuator + Prometheus + Micrometer |
 | Build | Maven |
 | Contenedor | Docker (multi-stage, eclipse-temurin:25) |
 
 ---
 
-## 3. Autenticación y Seguridad
+## 3. Autenticación y Seguridad (JWT)
 
-- **Método:** HTTP Basic Authentication
-- **Endpoints GET** → públicos (no requieren autenticación)
-- **Endpoints POST, PUT, DELETE** → requieren autenticación
-- CSRF deshabilitado
-- CORS habilitado con defaults
+- **Método:** Bearer Token JWT (JJWT 0.12.x + BCrypt)
+- **Endpoints de Autenticación:**
+  - `POST /api/v1/auth/login` → Autentica por usuario o email y devuelve el token JWT.
+  - `POST /api/v1/auth/register` → Registra un usuario administrador / de inventario.
+- **Endpoints GET** → públicos (no requieren autenticación para visualización del catálogo)
+- **Endpoints POST, PUT, DELETE** → requieren token JWT en la cabecera `Authorization`
 - Sesión: STATELESS
 
-**Headers requeridos para mutaciones:**
+**Header requerido para mutaciones (inventario, modelos, marcas, proveedores):**
 
 ```
-Authorization: Basic <base64(usuario:contraseña)>
+Authorization: Bearer <tu_token_jwt>
 ```
 
-> Las credenciales se configuran via variables de entorno `SECURITY_USER` y `SECURITY_PASSWORD`.
+**Ejemplo de Login (`POST /api/v1/auth/login`):**
+```json
+{
+  "username": "admin",
+  "password": "Password123"
+}
+```
+
+**Respuesta:**
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiJ9...",
+  "tokenType": "Bearer",
+  "userId": "uuid-del-usuario",
+  "username": "admin",
+  "email": "admin@laptopstore.com",
+  "fullName": "Administrador Principal",
+  "role": "ROLE_ADMIN"
+}
+```
 
 ---
 
@@ -99,18 +117,37 @@ Authorization: Basic <base64(usuario:contraseña)>
 
 ### 4.6 Product
 
+### 4.6 LaptopModel (Modelos de Laptops Compatibles)
+
 | Campo | Tipo | Restricciones |
 |---|---|---|
-| `name` | `string` | Obligatorio, máx 255 chars |
+| `brandName` | `string` | Obligatorio, ej: Dell, HP, Lenovo (máx 100 chars) |
+| `series` | `string` | Opcional, ej: Inspiron, Pavilion, ThinkPad (máx 100 chars) |
+| `modelNumber` | `string` | Obligatorio, ej: 15 3511, 14-dq0011dx (máx 100 chars) |
+| `notes` | `string` | Opcional (notas sobre chasis o generación) |
+
+### 4.7 Product (Repuesto de Laptop)
+
+| Campo | Tipo | Restricciones / Negocio |
+|---|---|---|
+| `name` | `string` | Obligatorio, máx 255 chars (ej: Pantalla 15.6 FHD 30 Pines) |
 | `description` | `string` | Opcional, máx 5000 chars |
-| `price` | `BigDecimal` | Obligatorio, > 0.01, precisión 12 escala 2 |
+| `price` | `BigDecimal` | Obligatorio, > 0.01, precisión 12 escala 2 (Precio de venta) |
+| `costPrice` | `BigDecimal` | Opcional, ≥ 0.00 (Costo de adquisición para calcular margen) |
 | `stock` | `integer` | Obligatorio, ≥ 0 |
+| `minStockAlert` | `integer` | Default `2` (Umbral para alertas de reabastecimiento) |
 | `sku` | `string` | Obligatorio, único, máx 100 chars |
+| `partNumber` | `string` | Opcional, indexado, máx 100 chars (MPN / Número de parte original) |
+| `condition` | `enum` | `NEW`, `USED`, `REFURBISHED`, `OEM_PULL` (Default `NEW`) |
+| `location` | `string` | Opcional, máx 100 chars (Ubicación física: Estante, Gaveta) |
+| `isElectrical` | `boolean` | Default `false` (Indica si es pieza con funcionalidad eléctrica) |
+| `warrantyMonths` | `integer` | Default `3` meses para repuestos eléctricos, `0` para mecánicos/estéticos |
+| `compatibilityNotes` | `string` | Opcional, máx 5000 chars (pines, voltaje, resolución) |
 | `subcategoryId` | `UUID` | Opcional (FK → Subcategory) |
 | `supplierId` | `UUID` | Opcional (FK → Supplier) |
 | `brandId` | `UUID` | Opcional (FK → Brand) |
-| `imageUrl` | `string` | URL de Cloudinary (gestionado por backend) |
-| `imagePublicId` | `string` | ID público de Cloudinary (gestionado por backend) |
+| `compatibleModelIds` | `Set<UUID>` | Modelos de laptop compatibles con este repuesto |
+| `images` | `List<ProductImage>` | Galería de fotos (conectores, etiquetas, flex) |
 | `active` | `boolean` | Default `true` |
 
 ### Diagrama de Relaciones
@@ -118,6 +155,8 @@ Authorization: Basic <base64(usuario:contraseña)>
 ```
 Category 1 ──── N Subcategory 1 ──── N Product N ──── 1 Brand
                                        Product N ──── 1 Supplier
+                                       Product N ──── M LaptopModel
+                                       Product 1 ──── N ProductImage
 ```
 
 ---
@@ -501,19 +540,7 @@ Las respuestas de error siguen un formato consistente:
 
 ---
 
-## 10. Caché (Redis)
-
-- Se cachean las consultas por ID (`getById`) para: products, categories, subcategories, brands, suppliers
-- TTL: **10 minutos** (600,000 ms)
-- Prefix de claves: `ecommerce:`
-- Al crear → se guarda en caché
-- Al actualizar → se actualiza en caché (`@CachePut`)
-- Al eliminar → se invalida la caché (`@CacheEvict`)
-- Las consultas paginadas NO se cachean
-
----
-
-## 11. Serialización JSON (Jackson)
+## 10. Serialización JSON (Jackson)
 
 - Propiedades `null` se **omiten** de la respuesta (`NON_NULL`)
 - Propiedades desconocidas en el request se **ignoran**
@@ -522,7 +549,7 @@ Las respuestas de error siguen un formato consistente:
 
 ---
 
-## 12. Variables de Entorno Requeridas
+## 11. Variables de Entorno Requeridas
 
 | Variable | Descripción |
 |---|---|
@@ -531,7 +558,6 @@ Las respuestas de error siguen un formato consistente:
 | `DB_NAME` | Nombre de la base de datos |
 | `DB_USERNAME` | Usuario de PostgreSQL |
 | `DB_PASSWORD` | Contraseña de PostgreSQL |
-| `REDIS_URL` | URL completa de Redis (ej: `redis://localhost:6379`) |
 | `SECURITY_USER` | Usuario para HTTP Basic Auth |
 | `SECURITY_PASSWORD` | Contraseña para HTTP Basic Auth |
 | `CLOUDINARY_CLOUD_NAME` | Cloud name de Cloudinary |
@@ -540,7 +566,7 @@ Las respuestas de error siguen un formato consistente:
 
 ---
 
-## 13. Endpoints de Monitoreo (Actuator)
+## 12. Endpoints de Monitoreo (Actuator)
 
 | Ruta | Descripción |
 |---|---|
@@ -548,14 +574,13 @@ Las respuestas de error siguen un formato consistente:
 | `/actuator/info` | Info de la aplicación |
 | `/actuator/metrics` | Métricas de la JVM y la app |
 | `/actuator/prometheus` | Métricas en formato Prometheus |
-| `/actuator/caches` | Estado de las cachés |
 | `/actuator/loggers` | Niveles de logging |
 
 > Todos los endpoints de Actuator son públicos (no requieren auth).
 
 ---
 
-## 14. Consideraciones para el Frontend
+## 13. Consideraciones para el Frontend
 
 1. **IDs son UUID** — Todos los identificadores son UUID v4 como strings.
 2. **Productos usan multipart** — No enviar JSON directo, usar `FormData` con un Blob JSON para el part `"product"`.

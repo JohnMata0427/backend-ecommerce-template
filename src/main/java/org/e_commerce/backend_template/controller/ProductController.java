@@ -1,7 +1,9 @@
 package org.e_commerce.backend_template.controller;
 
+import java.util.List;
 import java.util.UUID;
 
+import org.e_commerce.backend_template.dto.ProductImageDto;
 import org.e_commerce.backend_template.dto.ProductRequestDto;
 import org.e_commerce.backend_template.dto.ProductResponseDto;
 import org.e_commerce.backend_template.service.ProductService;
@@ -16,6 +18,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
@@ -35,8 +38,8 @@ public class ProductController {
   @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   public ResponseEntity<ProductResponseDto> createProduct(
       @RequestPart("product") @Valid final ProductRequestDto requestDto,
-      @RequestPart(value = "image", required = false) final MultipartFile image) {
-    final ProductResponseDto created = productService.createProduct(requestDto, image);
+      @RequestPart(value = "images", required = false) final List<MultipartFile> images) {
+    final ProductResponseDto created = productService.createProduct(requestDto, images);
     return ResponseEntity.status(HttpStatus.CREATED).body(created);
   }
 
@@ -48,6 +51,11 @@ public class ProductController {
   @GetMapping("/sku/{sku}")
   public ResponseEntity<ProductResponseDto> getProductBySku(@PathVariable final String sku) {
     return ResponseEntity.ok(productService.getProductBySku(sku));
+  }
+
+  @GetMapping("/part-number/{partNumber}")
+  public ResponseEntity<ProductResponseDto> getProductByPartNumber(@PathVariable final String partNumber) {
+    return ResponseEntity.ok(productService.getProductByPartNumber(partNumber));
   }
 
   @GetMapping
@@ -62,47 +70,82 @@ public class ProductController {
     return ResponseEntity.ok(productService.getActiveProducts(pageable));
   }
 
+  @GetMapping("/low-stock")
+  public ResponseEntity<Page<ProductResponseDto>> getLowStockAlerts(
+      @PageableDefault(size = 20) final Pageable pageable) {
+    return ResponseEntity.ok(productService.getLowStockAlerts(pageable));
+  }
+
+  @GetMapping("/compatible-model/{modelId}")
+  public ResponseEntity<Page<ProductResponseDto>> getProductsByCompatibleModel(
+      @PathVariable final UUID modelId,
+      @PageableDefault(size = 20) final Pageable pageable) {
+    return ResponseEntity.ok(productService.getProductsByCompatibleModel(modelId, pageable));
+  }
+
   @GetMapping("/subcategory/{subcategoryId}")
-  public ResponseEntity<Page<ProductResponseDto>> getProductsBySubcategory(
+  public ResponseEntity<Page<ProductResponseDto>> getProductsBySubcategoryId(
       @PathVariable final UUID subcategoryId,
       @PageableDefault(size = 20, sort = "name") final Pageable pageable) {
     return ResponseEntity.ok(productService.getProductsBySubcategoryId(subcategoryId, pageable));
   }
 
   @GetMapping("/supplier/{supplierId}")
-  public ResponseEntity<Page<ProductResponseDto>> getProductsBySupplier(
+  public ResponseEntity<Page<ProductResponseDto>> getProductsBySupplierId(
       @PathVariable final UUID supplierId,
       @PageableDefault(size = 20, sort = "name") final Pageable pageable) {
     return ResponseEntity.ok(productService.getProductsBySupplierId(supplierId, pageable));
   }
 
   @GetMapping("/brand/{brandId}")
-  public ResponseEntity<Page<ProductResponseDto>> getProductsByBrand(
+  public ResponseEntity<Page<ProductResponseDto>> getProductsByBrandId(
       @PathVariable final UUID brandId,
       @PageableDefault(size = 20, sort = "name") final Pageable pageable) {
     return ResponseEntity.ok(productService.getProductsByBrandId(brandId, pageable));
   }
 
   @GetMapping("/category/{categoryId}")
-  public ResponseEntity<Page<ProductResponseDto>> getProductsByCategory(
+  public ResponseEntity<Page<ProductResponseDto>> getProductsByCategoryId(
       @PathVariable final UUID categoryId,
       @PageableDefault(size = 20, sort = "name") final Pageable pageable) {
     return ResponseEntity.ok(productService.getProductsByCategoryId(categoryId, pageable));
   }
 
   @GetMapping("/search")
-  public ResponseEntity<Page<ProductResponseDto>> searchProducts(
-      @RequestParam final String name,
-      @PageableDefault(size = 20, sort = "name") final Pageable pageable) {
+  public ResponseEntity<Page<ProductResponseDto>> searchProductsByName(
+      @RequestParam("name") final String name,
+      @PageableDefault(size = 20) final Pageable pageable) {
     return ResponseEntity.ok(productService.searchProductsByName(name, pageable));
   }
 
-  @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+  @GetMapping("/search/part-number")
+  public ResponseEntity<Page<ProductResponseDto>> searchProductsByPartNumber(
+      @RequestParam("partNumber") final String partNumber,
+      @PageableDefault(size = 20) final Pageable pageable) {
+    return ResponseEntity.ok(productService.searchProductsByPartNumber(partNumber, pageable));
+  }
+
+  @PutMapping("/{id}")
   public ResponseEntity<ProductResponseDto> updateProduct(
       @PathVariable final UUID id,
-      @RequestPart("product") @Valid final ProductRequestDto requestDto,
-      @RequestPart(value = "image", required = false) final MultipartFile image) {
-    return ResponseEntity.ok(productService.updateProduct(id, requestDto, image));
+      @RequestBody @Valid final ProductRequestDto requestDto) {
+    return ResponseEntity.ok(productService.updateProduct(id, requestDto));
+  }
+
+  @PostMapping(value = "/{id}/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+  public ResponseEntity<ProductImageDto> addImage(
+      @PathVariable final UUID id,
+      @RequestPart("image") final MultipartFile image,
+      @RequestParam(value = "isPrimary", defaultValue = "false") final boolean isPrimary) {
+    return ResponseEntity.status(HttpStatus.CREATED).body(productService.addImageToProduct(id, image, isPrimary));
+  }
+
+  @DeleteMapping("/{id}/images/{imageId}")
+  public ResponseEntity<Void> removeImage(
+      @PathVariable final UUID id,
+      @PathVariable final UUID imageId) {
+    productService.removeImageFromProduct(id, imageId);
+    return ResponseEntity.noContent().build();
   }
 
   @DeleteMapping("/{id}")

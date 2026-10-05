@@ -9,11 +9,13 @@ import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 import org.mapstruct.NullValuePropertyMappingStrategy;
 
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring", uses = {LaptopModelMapper.class, ProductImageMapper.class})
 public interface ProductMapper {
 
   @Mapping(target = "imageUrl", ignore = true)
   @Mapping(target = "imagePublicId", ignore = true)
+  @Mapping(target = "images", ignore = true)
+  @Mapping(target = "compatibleModels", ignore = true)
   @Mapping(target = "subcategory", ignore = true)
   @Mapping(target = "supplier", ignore = true)
   @Mapping(target = "brand", ignore = true)
@@ -33,6 +35,8 @@ public interface ProductMapper {
   @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
   @Mapping(target = "imageUrl", ignore = true)
   @Mapping(target = "imagePublicId", ignore = true)
+  @Mapping(target = "images", ignore = true)
+  @Mapping(target = "compatibleModels", ignore = true)
   @Mapping(target = "subcategory", ignore = true)
   @Mapping(target = "supplier", ignore = true)
   @Mapping(target = "brand", ignore = true)
